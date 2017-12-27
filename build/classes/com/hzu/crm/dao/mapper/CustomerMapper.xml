@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.ICustomerDao">
+
+	<resultMap type="Customer" id="customerMap">
+		<id column="ID" property="id" />
+		<result column="NAME" property="name" />
+		<result column="EDUCATION" property="education" />
+		<result column="PHONENO" property="phoneNo" />
+		<result column="QQ" property="qq" />
+		<result column="EMAIL" property="email" />
+		<result column="CUSTOMSTATU" property="customStatu" />
+		<result column="CREATEDATE" property="createDate" />
+		<result column="INVITENAME" property="inviteName" />
+		<!-- 设置一对多关系，根据自身主键查询所有跟踪单 -->
+		<collection column="ID" property="infoList" javaType="java.util.List"
+			ofType="CustomerInfo" select="com.hzu.crm.dao.ICustomerInfoDao.findByCusId" />
+		<!-- 设置一对多关系，根据自身主键查询所有咨询单 -->
+		<collection column="ID" property="consultList" javaType="java.util.List"
+			ofType="ConsultRecord" select="com.hzu.crm.dao.IConsultRecordDao.findByCusId" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="customerMap">
+		select *
+		from CUSTOMER where
+		ID=#{id}
+	</select>
+
+	<!-- 查询所有客户 -->
+	<select id="findAll" resultMap="customerMap">
+		select *
+		from CUSTOMER
+	</select>
+	
+	<select id="count" resultType="java.lang.Integer">
+		select count(*)
+		from CUSTOMER
+	</select>
+
+	<!-- 分页查询 -->
+	<select id="findByPage" resultMap="customerMap">
+		select * FROM (select
+		CUSTOMER.*,rownum rn from CUSTOMER) where rn between #{0} and #{1}
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="Customer">
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SEQ_CUS_ID.nextval from dual
+		</selectKey>
+		insert into CUSTOMER values (#{id},#{name},#{education},#{phoneNo},
+		#{qq},#{email},#{customStatu},#{createDate},#{inviteName})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="Customer">
+		update CUSTOMER set
+		NAME=#{name},EDUCATION=#{education},PHONENO=#{phoneNo},
+		QQ=#{qq},EMAIL=#{email},CUSTOMSTATU=#{customStatu},CREATEDATE=#{createDate},INVITENAME=#{inviteName}
+		where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from CUSTOMER where ID=#{id}
+	</delete>
+</mapper>

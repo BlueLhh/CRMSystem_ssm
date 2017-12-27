@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.IConsultRecordDao">
+
+	<resultMap type="ConsultRecord" id="conRecMap">
+		<id column="ID" property="id" />
+		<result column="CONSULTSTATU" property="consultStatu" />
+		<result column="CONSULTDATE" property="consultDate" />
+		<result column="RESULT" property="result" />
+		<!-- 设置多对一关系，根据客户外键查询客户 -->
+		<association column="CUSTOMERID" property="customer"
+			javaType="Customer" select="com.hzu.crm.dao.ICustomerDao.findById" />
+		<!-- 设置多对一关系，根据客户外键查询员工 -->
+		<association column="CONSULTMANID" property="employee"
+			javaType="Employee" select="com.hzu.crm.dao.IEmployeeDao.findById" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="conRecMap">
+		select *
+		from CONSULTRECORD where
+		ID=#{id}
+	</select>
+
+	<!-- 根据客户外键查询咨询单 -->
+	<select id="findByCusId" resultMap="conRecMap">
+		select *
+		from CONSULTRECORD
+		where
+		CUSTOMERID=#{cid}
+	</select>
+
+	<!-- 根据员工外键查询跟踪单 -->
+	<select id="findByEmpId" resultMap="conRecMap">
+		select *
+		from CONSULTRECORD
+		where
+		CONSULTMANID=#{eid}
+	</select>
+
+	<!-- 查询所有员工的订单数 -->
+	<select id="findAllStatu" resultMap="conRecMap">
+		select CONSULTMANID,CONSULTSTATU,count(*) as count 
+		from CONSULTRECORD where 1=1
+		<if	test="today != null">
+			and CONSULTDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="start != null">
+			and CONSULTDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="history != null">
+			and trunc(sysdate) > CONSULTDATE
+		</if>
+		<if	test="month != null">
+			and CONSULTDATE between sysdate-30 and sysdate
+		</if>
+		group by CONSULTSTATU,CONSULTMANID order by CONSULTMANID
+	</select>
+
+	<!-- 根据员工外键查询及记录状态，查询记录总数 -->
+	<select id="getStatuCount" resultType="java.lang.Integer">
+		select count(*)
+		from
+		CONSULTRECORD where CONSULTSTATU=#{statu}
+		<if test="empId != 0">
+			and CONSULTMANID=#{empId}
+		</if>
+		<if	test="today != null">
+			and CONSULTDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="start != null">
+			and CONSULTDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="history != null">
+			and trunc(sysdate) > CONSULTDATE
+		</if>
+		<if	test="month != null">
+			and CONSULTDATE between sysdate-30 and sysdate
+		</if>
+	</select>
+
+	<!-- 查询所有跟踪单 -->
+	<select id="findAll" resultMap="conRecMap">
+		select *
+		from CONSULTRECORD
+	</select>
+
+	<!-- 根据员工外键查询其拥有的咨询单总数 -->
+	<select id="getCount" resultType="java.lang.Integer">
+		select count(*)
+		from
+		CONSULTRECORD where 1=1
+		<if test="empId != 0">
+			and CONSULTMANID=#{empId}
+		</if>
+	</select>
+
+	<!-- 分页查询 findByPage -->
+	<select id="findByPage" resultMap="conRecMap">
+		select *
+		from (select
+		CONSULTRECORD.*,rownum rn from CONSULTRECORD where 1=1
+		<if test="empId != 0">
+			and CONSULTMANID=#{empId}
+		</if>
+		)where rn between #{start} and #{end}
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="ConsultRecord">
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SEQ_CONREC_ID.nextval from dual
+		</selectKey>
+		insert into CONSULTRECORD values
+		(#{id},#{customer.id},#{employee.id},#{consultStatu},#{consultDate},#{result})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="ConsultRecord">
+		update CONSULTRECORD set
+		CUSTOMERID=#{customer.id},CONSULTMANID=#{employee.id},
+		CONSULTSTATU=#{consultStatu},CONSULTDATE=#{consultDate},RESULT=#{result}
+		where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from CONSULTRECORD where ID=#{id}
+	</delete>
+</mapper>

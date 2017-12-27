@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.IJobRightDao">
+
+	<resultMap type="JobRight" id="jobRightMap">
+		<id column="ID" property="id" />
+		<!-- 多对一关系，根据权限外键，查询拥有的权限 -->
+		<association column="RIGHTID" property="rights" javaType="Rights"
+			select="com.hzu.crm.dao.IRightsDao.findById" />
+		<!-- 多对一关系，根据职位信息外键，查询拥有该权限的职位信息 -->
+		<association column="JOBINFOID" property="jobInfo"
+			javaType="JobInfo" select="com.hzu.crm.dao.IJobInfoDao.findById" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="jobRightMap">
+		select *
+		from JOBRIGHT where
+		ID=#{id}
+	</select>
+
+	<!-- 根据权限表外键查询该职位权限 -->
+	<select id="findByRigId" resultMap="jobRightMap">
+		select *
+		from JOBRIGHT where
+		RIGHTID=#{rid}
+	</select>
+
+	<!-- 根据职位表外键查询该职位权限 -->
+	<select id="findByJobId" resultMap="jobRightMap">
+		select *
+		from JOBRIGHT where
+		JOBINFOID=#{jid}
+	</select>
+
+	<!-- 查询所有权限 -->
+	<select id="findAll" resultMap="jobRightMap">
+		select *
+		from JOBRIGHT
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="JobRight">
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SEQ_JOBRIG_ID.nextval from dual
+		</selectKey>
+		insert into JOBRIGHT values
+		(#{id},#{jobInfo.id},#{rights.rid})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="JobRight">
+		update JOBRIGHT set
+		JOBINFOID=#{jobInfo.id},RIGHTID=#{rights.rid}
+		where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from JOBRIGHT where ID=#{id}
+	</delete>
+
+	<!-- 删除 -->
+	<delete id="deleteByFK">
+		delete from JOBRIGHT where RIGHTID=#{0} and
+		JOBINFOID=#{1}
+	</delete>
+</mapper>

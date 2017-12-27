@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.IDepartmentDao">
+
+	<!-- 结果集映射，相当于把ResultSet中的字段，映射并封装成一个对象 -->
+	<!-- type是封装成的对象类型，id是该结果集的唯一标志 -->
+	<resultMap type="Department" id="departmentMap">
+		<!-- column指数据库里的列名，property指实体类中的字段名 -->
+		<!-- javaType是property的类型，可以省略，建议先省略，mybatis会自动匹配类型，转化报错时再显示定义 -->
+		<!-- jdbcType是column的类型，在做insert，update，delete等操作时，如果该列允许为空，则需要添加此属性 -->
+		<!-- 建议先省略，报错时再显示定义 -->
+		<id column="ID" property="id" javaType="long" jdbcType="DECIMAL" />
+		<result column="DNAME" property="dname" />
+		<!-- javaType填入集合类型，对应Department实体类中的jobList属性的类型 -->
+		<!-- ofType填入集合的泛型类型 -->
+		<!-- column代表填入那个参数去调用 JobInfo的Dao层的findByDeptId方法 -->
+		<!-- 建立一对多关系，根据自身主键查询部门拥有的职位 -->
+		<collection column="ID" property="jobList"
+			select="com.hzu.crm.dao.IJobInfoDao.findByDeptId" javaType="java.util.List"
+			ofType="JobInfo" />
+		<!-- 建立一对多关系，根据自身主键查询部门拥有的员工 -->
+		<collection column="ID" property="empList" javaType="java.util.List"
+			ofType="Employee" select="com.hzu.crm.dao.IEmployeeDao.findByDeptId" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="departmentMap">
+		select *
+		from DEPARTMENT where
+		ID=#{id}
+	</select>
+
+	<!-- 查询所有部门 -->
+	<select id="findAll" resultMap="departmentMap">
+		select *
+		from DEPARTMENT
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="Department">
+		<!-- keyColumn表示数据库中的主键 -->
+		<!-- keyProperty表示生成的序列id放入到实体类的那个属性中 -->
+		<!-- order表示执行顺序， BEFORE表示在插入之前执行selectKey查询序列 -->
+		<!-- resultType表示生成序列的字符类型 -->
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SER_DEPT_ID.nextval from dual
+		</selectKey>
+		<!-- 查询到序列id后，执行插入语句 -->
+		insert into DEPARTMENT values (#{id},#{dname})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="Department">
+		update DEPARTMENT set
+		DNAME=#{dname} where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from DEPARTMENT where ID=#{id}
+	</delete>
+</mapper>

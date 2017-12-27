@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.IJobInfoDao">
+	<resultMap type="JobInfo" id="jobInfoMap">
+		<id column="ID" property="id" />
+		<result column="JOB" property="job" />
+		<!-- property 指关联关系中，对方的引用 -->
+		<!-- select指调用对方Dao接口中的那个查询方法 -->
+		<!-- column指使用当前表中那个字段，传入到对方的查询方法 -->
+		<!-- 一般是传入外键，即对方的主键，进行查询 -->
+		<!-- 建立多对一关系，根据外键查询部门 -->
+		<association column="DEPARTMENTID" property="dept"
+			javaType="Department" select="com.hzu.crm.dao.IDepartmentDao.findById" />
+		<!-- 建立一对多关系，根据主键查询员工 -->
+		<collection column="ID" property="empList" javaType="java.util.List"
+			ofType="Employee" select="com.hzu.crm.dao.IEmployeeDao.findByJobId" />
+		<!-- 建立一对多关系，根据主键查询职位权限 -->
+		<collection column="ID" property="jobRigList" javaType="java.util.List"
+			ofType="JobRight" select="com.hzu.crm.dao.IJobRightDao.findByJobId" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="jobInfoMap">
+		select *
+		from JobInfo where
+		ID=#{id}
+	</select>
+	
+	<!-- 根据职位名称查询 -->
+	<select id="findByJob" resultMap="jobInfoMap">
+		select *
+		from JobInfo where
+		JOB=#{job}
+	</select>
+
+	<!-- 根据部门外键查询职位 -->
+	<select id="findByDeptId" resultMap="jobInfoMap">
+		select *
+		from JobInfo where
+		DEPARTMENTID=#{deptId}
+	</select>
+	
+	<select id="findJobNameByDeptId" resultMap="jobInfoMap">
+		select job
+		from JobInfo where
+		DEPARTMENTID=#{deptId}
+	</select>
+
+	<!-- 查询所有职位 -->
+	<select id="findAll" resultMap="jobInfoMap">
+		select *
+		from JobInfo
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="JobInfo">
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SER_JOBINFO_ID.nextval from dual
+		</selectKey>
+		insert into JOBINFO values (#{id},#{job},#{dept.id})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="JobInfo">
+		update JobInfo set
+		JOB=#{job},DEPARTMENTID=#{dept.id} where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from JOBINFO where ID=#{id}
+	</delete>
+</mapper>

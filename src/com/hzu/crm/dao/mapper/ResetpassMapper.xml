@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.IResetpassDao">
+
+	<resultMap type="Resetpass" id="repassMap">
+		<id column="ID" property="id" />
+		<result column="USERNAME" property="username" />
+		<result column="PHONENO" property="phoneNo" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="repassMap">
+		select *
+		from RESETPASS where
+		ID=#{id}
+	</select>
+
+	<!-- 查询所有记录 -->
+	<select id="findAll" resultMap="repassMap">
+		select *
+		from RESETPASS
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="Resetpass">
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SEQ_REPASS_ID.nextval from dual
+		</selectKey>
+		insert into RESETPASS values (#{id},#{username},#{phoneNo})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="Resetpass">
+		update RESETPASS set
+		USERNAME=#{username},PHONENO=#{phoneNo}
+		where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from RESETPASS where ID=#{id}
+	</delete>
+</mapper>

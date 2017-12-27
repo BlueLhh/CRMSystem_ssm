@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd 
+	http://www.springframework.org/schema/tx 
+	http://www.springframework.org/schema/tx/spring-tx.xsd
+	http://www.springframework.org/schema/util
+	http://www.springframework.org/schema/util/spring-util.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
+	<!-- 使用注解时，需要开启以下属性，扫描包含注解的包下的文件 -->
+	<!-- base-package要扫描的包的路径，包括其自路径 -->
+	<context:component-scan base-package="com.hzu.crm" />
+	<!-- 引入配置db.properties文件 -->
+	<context:property-placeholder
+		location="classpath:com/hzu/crm/utils/jdbcinfo.properties" />
+	<!-- 开启切面注解 -->
+	<aop:aspectj-autoproxy />
+
+	<!-- c3p0连接池的数据源，相当于jdbc的Connection -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${oracle.driver}" />
+		<property name="jdbcUrl" value="${oracle.url}" />
+		<property name="user" value="${oracle.user}" />
+		<property name="password" value="${oracle.password}" />
+		<!-- 初始化连接数 -->
+		<property name="initialPoolSize" value="10" />
+		<!-- 最小连接数 -->
+		<property name="minPoolSize" value="2" />
+		<!-- 最大连接数 -->
+		<property name="maxPoolSize" value="10" />
+		<!-- 最大空闲时间，毫秒？ -->
+		<property name="maxIdleTime" value="20000" />
+	</bean>
+
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 注入数据源 -->
+		<property name="dataSource" ref="dataSource" />
+		<!-- 注入实体类的映射文件 -->
+		<property name="mapperLocations"
+			value="classpath:com/hzu/crm/dao/mapper/*.xml" />
+		<!-- 配置某些包下的实体类使用别名 -->
+		<property name="typeAliasesPackage" value="com.hzu.crm.entity" />
+		<!-- 另外的一些mybatis配置，可以单独写一个xml，使用configLocation属性引入 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 ,包下的类需要使用@MapperScan注解,
+		  否则容器注入会失败 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.hzu.crm.*" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+	</bean>
+
+	<!-- 创建管理Mybatis(JDBC)的事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+
+	<!-- 使用aop实现事务管理 -->
+	<aop:config>
+		<!-- 定义切入点 -->
+		<aop:pointcut
+			expression="execution(* com.hzu.crm.service.impl.*.*(..))"
+			id="pointcutTx" />
+		<!-- 配置事务通知器和切入点 -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pointcutTx" />
+	</aop:config>
+	<!-- 定义一个事务通知器，使用事务管理器来管理 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="insert*" isolation="DEFAULT" propagation="REQUIRED"
+				timeout="-1" />
+			<tx:method name="del*" isolation="DEFAULT" propagation="REQUIRED"
+				timeout="-1" />
+			<tx:method name="update*" isolation="DEFAULT" propagation="REQUIRED"
+				timeout="-1" />
+			<!-- read-only表示只读，不修改数据 -->
+			<tx:method name="*" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+	<!-- 基于注解的事务实现 -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+</beans>

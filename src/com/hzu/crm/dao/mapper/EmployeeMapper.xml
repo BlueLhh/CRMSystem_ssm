@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.IEmployeeDao">
+
+	<!-- 结果集映射，相当于把ResultSet中的字段，映射并封装成一个对象 -->
+	<!-- type是封装成的对象类型，id是该结果集的唯一标志 -->
+	<resultMap type="Employee" id="employeeMap">
+		<id column="ID" property="id" />
+		<result column="USERNAME" property="username" />
+		<result column="PASS" property="pass" />
+		<result column="NICKNAME" property="nickname" />
+		<result column="REALNAME" property="realname" />
+		<result column="PHONENO" property="phoneNo" />
+		<result column="OFFICETEL" property="officeTel" />
+		<result column="WORKSTATU" property="workstatu" />
+		<!-- 多对一关系， 根据职位信息外键，查询职位信息 -->
+		<association column="JOBINFOID" property="jobInfo"
+			javaType="JobInfo" select="com.hzu.crm.dao.IJobInfoDao.findById" />
+		<!-- 多对一关系， 根据部门外键，查询部门 -->
+		<association column="DEPARTMENTID" property="dept"
+			javaType="Department" select="com.hzu.crm.dao.IDepartmentDao.findById" />
+		<!-- 一对多关系，根据自身主键，查询所有跟踪单 -->
+		<collection column="ID" property="infoList" javaType="java.util.List"
+			ofType="CustomerInfo" select="com.hzu.crm.dao.ICustomerInfoDao.findByEmpId" />
+		<!-- 一对多关系，根据自身主键，查询所有咨询单 -->
+		<collection column="ID" property="consultList" javaType="java.util.List"
+			ofType="ConsultRecord" select="com.hzu.crm.dao.IConsultRecordDao.findByEmpId" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="employeeMap">
+		select *
+		from EMPLOYEE where
+		ID=#{id}
+	</select>
+	
+	<!-- 根据用户名查询 -->
+	<select id="findByName" resultMap="employeeMap">
+		select *
+		from EMPLOYEE where
+		USERNAME=#{username}
+	</select>
+
+	<!-- 根据用户名和密码查询用户 -->
+	<select id="findByNameAndPWD" resultMap="employeeMap">
+		select *
+		from EMPLOYEE
+		where
+		USERNAME=#{0} and PASS=#{1}
+	</select>
+
+	<!-- 根据部门外键查询员工 -->
+	<select id="findByDeptId" resultMap="employeeMap">
+		select *
+		from EMPLOYEE where
+		DEPARTMENTID=#{deptId}
+	</select>
+
+	<!-- 根据职位外键查询员工 -->
+	<select id="findByJobId" resultMap="employeeMap">
+		select *
+		from EMPLOYEE where
+		JOBINFOID=#{jobId}
+	</select>
+
+	<select id="findEmpIdJobId" resultType="java.lang.Long">
+		select ID
+		from EMPLOYEE where
+		JOBINFOID=#{jobId}
+	</select>
+
+	<!-- 查询所有员工 -->
+	<select id="findAll" resultMap="employeeMap">
+		select *
+		from EMPLOYEE
+	</select>
+
+	<select id="count" resultType="java.lang.Integer">
+		select count(*)
+		from EMPLOYEE where 1=1
+		<if test="jobId != 0">
+			and JOBINFOID=#{jobId}
+		</if>
+	</select>
+
+	<select id="comCount" resultType="java.lang.Integer">
+		select count(*) from EMPLOYEE
+		where
+		JOBINFOID!=1 and
+		JOBINFOID!=2
+	</select>
+
+	<!-- 分页查询 -->
+	<select id="findByPage" resultMap="employeeMap">
+		select * FROM (select
+		EMPLOYEE.*,rownum rn from EMPLOYEE where 1=1
+		<if test="jobId != 0">
+			and JOBINFOID=#{jobId}
+		</if>
+		) where rn between #{start} and #{end}
+	</select>
+
+	<!-- 分页查询普通员工 -->
+	<select id="findComByPage" resultMap="employeeMap">
+		select * FROM (select
+		EMPLOYEE.*,rownum rn from EMPLOYEE where JOBINFOID!=1 and
+		JOBINFOID!=2) where rn between #{0} and #{1}
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="Employee">
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SEQ_EMP_ID.nextval from dual
+		</selectKey>
+		insert into EMPLOYEE values (#{id},#{username},#{pass},#{nickname},
+		#{realname},#{jobInfo.id},#{dept.id},#{phoneNo},#{officeTel},#{workstatu})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="Employee">
+		update EMPLOYEE set
+		USERNAME=#{username},PASS=#{pass},NICKNAME=#{nickname},
+		REALNAME=#{realname},JOBINFOID=#{jobInfo.id},DEPARTMENTID=#{dept.id},PHONENO=#{phoneNo},OFFICETEL=#{officeTel},WORKSTATU=#{workstatu}
+		where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from EMPLOYEE where ID=#{id}
+	</delete>
+</mapper>

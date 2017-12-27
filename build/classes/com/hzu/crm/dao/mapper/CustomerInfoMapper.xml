@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.ICustomerInfoDao">
+
+	<resultMap type="CustomerInfo" id="cusInfoMap">
+		<id column="ID" property="id" />
+		<result column="STATU" property="statu" />
+		<result column="STARTDATE" property="startDate" />
+		<result column="LASTFOLLOWDATE" property="lastFollowDate" />
+		<result column="PLANDATE" property="planDate" />
+		<result column="MARK" property="mark" />
+		<!-- 设置多对一关系，根据客户外键查询客户 -->
+		<association column="CUSTOMERID" property="customer"
+			javaType="Customer" select="com.hzu.crm.dao.ICustomerDao.findById" />
+		<!-- 设置多对一关系，根据客户外键查询员工 -->
+		<association column="FOLLOWMANID" property="employee"
+			javaType="Employee" select="com.hzu.crm.dao.IEmployeeDao.findById" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="cusInfoMap">
+		select *
+		from CUSTOMERINFO where
+		ID=#{id}
+	</select>
+
+	<!-- 查询所有员工的订单数 -->
+	<select id="findAllStatu" resultMap="cusInfoMap">
+		select FOLLOWMANID,STATU,count(*) as count 
+		from CUSTOMERINFO where 1=1
+		<if	test="today != null">
+			and LASTFOLLOWDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="start != null">
+			and STARTDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="history != null">
+			and trunc(sysdate) > LASTFOLLOWDATE
+		</if>
+		<if	test="month != null">
+			and STARTDATE between sysdate-30 and sysdate
+		</if>
+		group by STATU,FOLLOWMANID order by FOLLOWMANID
+	</select>
+
+	<!-- 根据员工外键查询其拥有的记录总数 -->
+	<select id="getCount" resultType="java.lang.Integer">
+		select count(*)
+		from
+		CUSTOMERINFO where 1=1
+		<if test="empId != 0">
+			and FOLLOWMANID=#{empId}
+		</if>
+		<if	test="today != null">
+			and LASTFOLLOWDATE between trunc(sysdate) and sysdate+1
+		</if>
+	</select>
+	
+	<!-- 根据员工外键查询及记录状态，查询记录总数 -->
+	<select id="getStatuCount" resultType="java.lang.Integer">
+		select count(*)
+		from
+		CUSTOMERINFO where STATU=#{statu}
+		<if test="empId != 0">
+			and FOLLOWMANID=#{empId}
+		</if>
+		<if	test="today != null">
+			and LASTFOLLOWDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="start != null">
+			and STARTDATE between trunc(sysdate) and sysdate+1
+		</if>
+		<if	test="history != null">
+			and trunc(sysdate) > LASTFOLLOWDATE
+		</if>
+		<if	test="month != null">
+			and STARTDATE between sysdate-30 and sysdate
+		</if>
+	</select>
+
+	<!-- 分页查询 findByPage -->
+	<select id="findByPage" resultMap="cusInfoMap">
+		select *
+		from (select
+		CUSTOMERINFO.*,rownum rn from CUSTOMERINFO where 1=1
+		<if test="empId != 0">
+			and FOLLOWMANID=#{empId}
+		</if>
+		<if	test="today != null">
+			and LASTFOLLOWDATE between trunc(sysdate) and sysdate+1
+		</if>
+		)where rn between #{start} and #{end}
+	</select>
+
+	<!-- 根据客户外键查询跟踪单 -->
+	<select id="findByCusId" resultMap="cusInfoMap">
+		select *
+		from CUSTOMERINFO
+		where
+		CUSTOMERID=#{cid}
+	</select>
+
+	<!-- 根据员工外键查询跟踪单 -->
+	<select id="findByEmpId" resultMap="cusInfoMap">
+		select *
+		from CUSTOMERINFO
+		where
+		FOLLOWMANID=#{eid}
+	</select>
+
+	<!-- 查询所有跟踪单 -->
+	<select id="findAll" resultMap="cusInfoMap">
+		select *
+		from CUSTOMERINFO
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="CustomerInfo">
+		<selectKey keyColumn="ID" keyProperty="id" order="BEFORE"
+			resultType="long">
+			select SEQ_CUSINFO_ID.nextval from dual
+		</selectKey>
+		insert into CUSTOMERINFO values
+		(#{id},#{customer.id},#{employee.id},#{statu},#{startDate},#{lastFollowDate},
+		#{planDate},#{mark})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="CustomerInfo">
+		update CUSTOMERINFO set
+		CUSTOMERID=#{customer.id},FOLLOWMANID=#{employee.id},STATU=#{statu},STARTDATE=#{startDate},LASTFOLLOWDATE=#{lastFollowDate},
+		PLANDATE=#{planDate},MARK=#{mark}
+		where ID=#{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from CUSTOMERINFO where ID=#{id}
+	</delete>
+</mapper>

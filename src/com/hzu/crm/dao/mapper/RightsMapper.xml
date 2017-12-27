@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- namespace指向要实现的接口 -->
+<mapper namespace="com.hzu.crm.dao.IRightsDao">
+
+	<resultMap type="Rights" id="rightsMap">
+		<id column="RID" property="rid" />
+		<result column="RIGHTNAME" property="rightName" />
+		<result column="RIGHTTYPE" property="rightType" />
+		<result column="URL" property="url" />
+		<!-- 自连接，自身关联关系 -->
+		<association column="PID" property="rig" javaType="Rights"
+			select="com.hzu.crm.dao.IRightsDao.findById" />
+		<!-- 一对多关系，根据自身主键查询那个职位拥有该权限 -->
+		<collection column="RID" property="jobRigList" javaType="java.util.List"
+			ofType="JobRight" select="com.hzu.crm.dao.IJobRightDao.findByRigId" />
+	</resultMap>
+
+	<!-- 根据id查询 -->
+	<select id="findById" resultMap="rightsMap">
+		select *
+		from RIGHTS where
+		RID=#{id}
+	</select>
+
+	<!-- 根据权限名称查询 -->
+	<select id="findByName" resultMap="rightsMap">
+		select *
+		from RIGHTS where
+		RIGHTNAME=#{rightName}
+	</select>
+
+	<!-- 根据自关联外键查询权限 -->
+	<select id="findByRigId" resultMap="rightsMap">
+		select *
+		from RIGHTS where
+		PID=#{pid}
+	</select>
+
+	<!-- 查询所有权限 -->
+	<select id="findAll" resultMap="rightsMap">
+		select *
+		from RIGHTS
+	</select>
+
+	<select id="count" resultType="java.lang.Integer">
+		select count(*)
+		from RIGHTS
+	</select>
+
+	<!-- 分页查询 -->
+	<select id="findByPage" resultMap="rightsMap">
+		select * FROM (select
+		RIGHTS.*,rownum rn from RIGHTS) where rn between #{0} and #{1}
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="Rights">
+		<selectKey keyColumn="RID" keyProperty="rid" order="BEFORE"
+			resultType="long">
+			select SEQ_RIG_ID.nextval from dual
+		</selectKey>
+		insert into RIGHTS values
+		(#{rid},#{rightName},#{rightType},#{url},#{rig.rid})
+	</insert>
+
+	<!-- 更新 -->
+	<update id="update" parameterType="Rights">
+		update RIGHTS set
+		RIGHTNAME=#{rightName},RIGHTTYPE=#{rightType},URL=#{url},PID=#{rig.rid}
+		where RID=#{rid}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="deleteById">
+		delete from RIGHTS where RID=#{id}
+	</delete>
+</mapper>
